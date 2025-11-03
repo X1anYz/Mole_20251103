@@ -11,12 +11,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MoleViewModel: ViewModel() {
+    // 遊戲時間限制 (60秒)
+    private val GAME_DURATION_SECONDS = 60L
 
     var counter by mutableLongStateOf(0)
-        private set  //表示只有 ViewModel 內部可以修改它
+        private set
 
     var stay by mutableLongStateOf(0)
-        private set // 設定為 private
+        private set
+
     var maxX by mutableStateOf(0)
         private set
 
@@ -29,21 +32,29 @@ class MoleViewModel: ViewModel() {
     var offsetY by mutableStateOf(0)
         private set
 
+    var isGameActive by mutableStateOf(true) // 新增：遊戲是否活躍的狀態
+
     fun incrementCounter() {
-        counter++
+        if (isGameActive) { // 只有在遊戲進行中才加分
+            counter++
+        }
     }
 
     init {
-        // 在 ViewModel 初始化時啟動一個協程來自動增加計數器
         startCounting()
     }
 
     private fun startCounting() {
         viewModelScope.launch {
-            while (true) { // 無限循環，每秒增加一次
+            while (isGameActive) { // 當 isGameActive 為 true 時才繼續迴圈
                 delay(1000L)
-                stay++ // 計數器加 1，這會自動觸發 UI 更新
-                moveMole()
+
+                if (stay < GAME_DURATION_SECONDS) {
+                    stay++ // 計數器加 1
+                    moveMole()
+                } else {
+                    isGameActive = false // 達到時間限制，停止遊戲
+                }
             }
         }
     }
@@ -56,9 +67,9 @@ class MoleViewModel: ViewModel() {
 
     // 根據螢幕寬度,高度及地鼠圖片大小,隨機移動地鼠不超出螢幕範圍
     fun moveMole() {
-        offsetX = (0..maxX).random()
-        offsetY = (0..maxY).random()
+        if (isGameActive) { // 只有在遊戲進行中才移動地鼠
+            offsetX = (0..maxX).random()
+            offsetY = (0..maxY).random()
+        }
     }
-
-
 }
